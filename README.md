@@ -1,2 +1,2 @@
 # SGMS
-student griveance management system 
+student grievance management system
