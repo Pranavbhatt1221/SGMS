@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="dashboard.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans">
+
+    <nav class="bg-amber-400 h-16 flex items-center justify-between px-8 shadow-md sticky top-0 z-50">
+        <div class="docs-demo-html">
+            <div class="large grid centered square-grid">
+                <h2 class="text-xl">GrievanceHub</h2>
+            </div>
+        </div>
+        <button class="bg-cyan-400 hover:bg-cyan-500 text-white px-4 py-1 rounded transition">Logout</button>
+    </nav>
+
+    <div class="flex">
+        <aside class="w-64 bg-slate-800 min-h-screen p-4 flex flex-col gap-6 text-gray-300">
+            <div class="flex flex-col items-center py-6 border-b border-slate-700">
+                <img id="profilePic" src="" alt="Profile" class="w-20 h-20 rounded-full border-4 border-amber-400 mb-3 object-cover">
+                <span id="userNameDisplay" class="font-semibold text-white">Meet</span>
+            </div>
+            
+            <nav class="flex flex-col gap-2">
+                <button onclick="showSection('dashboard')" class="flex items-center gap-3 p-3 hover:bg-slate-700 rounded-lg transition active-nav" id="btn-dashboard">
+                    <i class="fas fa-th-large"></i> Dashboard / Lodge
+                </button>
+                <button onclick="showSection('account')" class="flex items-center gap-3 p-3 hover:bg-slate-700 rounded-lg transition" id="btn-account">
+                    <i class="fas fa-cog"></i> Account Setting
+                </button>
+                <button onclick="showSection('history')" class="flex items-center gap-3 p-3 hover:bg-slate-700 rounded-lg transition" id="btn-history">
+                    <i class="fas fa-history"></i> Complaint History
+                </button>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-8">
+            
+            <section id="dashboard-section" class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500">
+                        <h3 class="text-gray-500 text-sm font-medium">Not Processed Yet</h3>
+                        <p class="text-3xl font-bold text-slate-800" id="stat-pending">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-amber-500">
+                        <h3 class="text-gray-500 text-sm font-medium">In Process</h3>
+                        <p class="text-3xl font-bold text-slate-800" id="stat-process">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
+                        <h3 class="text-gray-500 text-sm font-medium">Closed</h3>
+                        <p class="text-3xl font-bold text-slate-800" id="stat-closed">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-4 border-b border-gray-100 flex items-center gap-2">
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                        <h2 class="text-xl font-semibold text-gray-700">Register Complaint</h2>
+                    </div>
+                    <form id="complaintForm" class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">Category</label>
+                                <select id="category" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 outline-none" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">Sub Category</label>
+                                <select id="subcategory" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 outline-none" required>
+                                    <option value="">Select Subcategory</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">Complaint Type</label>
+                                <select id="type" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 outline-none">
+                                    <option>Complaint</option>
+                                    <option>Query</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-2">Nature of Complaint</label>
+                                <input id="nature" type="text" placeholder="e.g. University" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-2">Complaint Details (max 2000 words)</label>
+                            <textarea id="details" rows="6" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 outline-none" required></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-2">Complaint Related Doc (if any)</label>
+                            <input type="file" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
+                        </div>
+
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-8 rounded-lg transition shadow-md">Submit</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="account-section" class="hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-4 border-b border-gray-100 flex items-center gap-2">
+                        <i class="fas fa-user text-gray-400"></i>
+                        <h2 class="text-xl font-semibold text-gray-700">Meet's Profile</h2>
+                    </div>
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">Full Name</label><input type="text" value="Meet" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">User Email</label><input type="email" value="saritag2402@gmail.com" class="w-full bg-gray-100 p-2 border rounded mt-1" readonly></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">PRN / Enrollment Number</label><input type="text" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">University</label><input type="text" value="Anna University" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">College</label><input type="text" value="5127 - acs" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">Department</label><input type="text" value="bsc. viscom" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">Year</label><input type="text" value="Second" class="w-full bg-gray-100 p-2 border rounded mt-1" readonly></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">Contact</label><input type="text" value="9209483991" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">State</label><select class="w-full bg-gray-50 p-2 border rounded mt-1"><option>Maharashtra</option></select></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">Country</label><input type="text" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">Pincode</label><input type="text" class="w-full bg-gray-50 p-2 border rounded mt-1"></div>
+                        <div><label class="block text-xs text-gray-400 uppercase font-bold">Reg Date</label><input type="text" value="2026-01-31" class="w-full bg-gray-100 p-2 border rounded mt-1" readonly></div>
+                    </div>
+                    <div class="p-6 border-t"><button class="bg-blue-500 text-white px-8 py-2 rounded shadow">Submit</button></div>
+                </div>
+            </section>
+
+            <section id="history-section" class="hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-4 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-700">Complaint History</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <tr>
+                                    <th class="p-4">Category</th>
+                                    <th class="p-4">Subcategory</th>
+                                    <th class="p-4">Nature</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="divide-y divide-gray-100 text-gray-700">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // Data Structure for Categories
+        const categories = {
+            "Admissions": ["Entrance Exam Issues", "Counselling", "Fee Payment (Admission)", "Document Verification"],
+            "Academics": ["Faculty Feedback", "Attendance Issues", "Course Material", "Timetable clashes"],
+            "Finance / Accounts": ["Scholarship delay", "Excess fee charge", "Fine related issues"],
+            "Hostel / Infrastructure": ["Room maintenance", "Food quality", "Wi-Fi connectivity", "Sanitation"],
+            "Examination": ["Result discrepancy", "Re-evaluation", "Hall ticket issues"]
+        };
+
+        // Initialize UI
+        window.onload = () => {
+            // Random Profile Image
+            const randIdx = Math.floor(Math.random() * 5) + 1; // Assuming you have 5 images
+            document.getElementById('profilePic').src = `img/profile/img${randIdx}.jpg`;
+            // Fallback for demo
+            document.getElementById('profilePic').onerror = (e) => { e.target.src = "https://via.placeholder.com/80?text=Meet"; };
+
+            // Populate Categories
+            const catSelect = document.getElementById('category');
+            Object.keys(categories).forEach(cat => {
+                let opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                catSelect.appendChild(opt);
+            });
+        };
+
+        // Dynamic Subcategories
+        document.getElementById('category').addEventListener('change', (e) => {
+            const subSelect = document.getElementById('subcategory');
+            subSelect.innerHTML = '<option value="">Select Subcategory</option>';
+            if (categories[e.target.value]) {
+                categories[e.target.value].forEach(sub => {
+                    let opt = document.createElement('option');
+                    opt.value = sub;
+                    opt.textContent = sub;
+                    subSelect.appendChild(opt);
+                });
+            }
+        });
+
+        // Navigation Logic
+        function showSection(sectionId) {
+            const sections = ['dashboard-section', 'account-section', 'history-section'];
+            sections.forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(`${sectionId}-section`).classList.remove('hidden');
+        }
+
+        // Mock History Store (will be replaced by Firestore)
+        let complaints = [];
+
+        document.getElementById('complaintForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newComplaint = {
+                category: document.getElementById('category').value,
+                subcategory: document.getElementById('subcategory').value,
+                nature: document.getElementById('nature').value || 'General',
+                status: 'Not Processed yet',
+                date: new Date().toLocaleDateString()
+            };
+            
+            complaints.push(newComplaint);
+            updateHistoryTable();
+            updateStats();
+            alert("Complaint Registered Successfully!");
+            e.target.reset();
+        });
+
+        function updateHistoryTable() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = complaints.map(c => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-4">${c.category}</td>
+                    <td class="p-4">${c.subcategory}</td>
+                    <td class="p-4">${c.nature}</td>
+                    <td class="p-4"><span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">${c.status}</span></td>
+                    <td class="p-4">${c.date}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('stat-pending').textContent = complaints.filter(c => c.status === 'Not Processed yet').length;
+            // You can add logic for 'In Process' and 'Closed' as you build the admin side
+        }
+    </script>
+</body>
+</html>
