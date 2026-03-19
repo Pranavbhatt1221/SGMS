@@ -2,7 +2,7 @@ import { auth } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const API_BASE_URL = 'https://grievancehub-ty6l.onrender.com/api/admin';
-let allComplaints = []; 
+let allComplaints = [];
 let currentComplaints = [];
 let currentUsers = [];
 let selectedComplaintId = null;
@@ -18,17 +18,17 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "login.html";
         return;
     }
-    
+
     // 2. ACTIVATE UI FIRST: Make sure tabs/buttons work immediately
-    setupEventListeners(); 
+    setupEventListeners();
     loadAdminProfilePic();
-    
+
     // 3. LOAD DATA SAFELY
     try {
         if (statusText) statusText.innerText = "Fetching live complaints...";
-        
+
         await loadAdminData(user);
-        
+
         // Success! Hide the loader
         if (loader) {
             loader.style.opacity = '0';
@@ -40,7 +40,7 @@ onAuthStateChanged(auth, async (user) => {
         console.error("Data load issue:", e);
         if (statusText) statusText.innerHTML = "Server is taking a moment... <br> Please wait.";
     }
-    
+
     // 4. Force UI to show the overview tab
     switchSection('overview', document.querySelector('.admin-link'));
 });
@@ -55,14 +55,14 @@ document.getElementById('adminProfilePicContainer')?.addEventListener('click', (
     document.getElementById('adminProfileImageUpload').click();
 });
 
-document.getElementById('adminProfileImageUpload')?.addEventListener('change', function(e) {
+document.getElementById('adminProfileImageUpload')?.addEventListener('change', function (e) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function() {
+    reader.onload = function () {
         const base64 = reader.result;
         document.getElementById('adminProfilePic').src = base64;
-        localStorage.setItem('adminProfilePic', base64); 
+        localStorage.setItem('adminProfilePic', base64);
         showNotification('Admin picture updated!', 'success');
     };
     reader.readAsDataURL(file);
@@ -86,7 +86,7 @@ async function loadAdminData(user) {
                 { id: "1", userId: "test@student.com", category: "Academics", subcategory: "Marks", nature: "Error", details: "Sample issue.", status: "Not Processed yet", date: new Date().toLocaleDateString() }
             ];
         }
-        
+
         if (usersRes.ok) {
             currentUsers = await usersRes.json() || [];
         } else {
@@ -97,7 +97,18 @@ async function loadAdminData(user) {
         console.warn("Running in local mode (Backend unreachable)");
     }
 
-    currentComplaints = [...allComplaints];
+
+
+    // NEW CODE
+   currentComplaints = allComplaints.map(complaint => {
+    const userMatch = currentUsers.find(u => u.email === complaint.userId || u.id === complaint.userId);
+    return {
+        ...complaint,
+        userName: userMatch ? (userMatch.fullName || userMatch.name) : 'Guest'
+    };
+});
+
+    updateUI();
     updateUI();
 }
 
@@ -130,11 +141,16 @@ function updateRecentComplaints() {
     }
 
     tbody.innerHTML = currentComplaints.slice(0, 5).map(c => {
+        // We still keep the Unique ID logic if you want it, but we add the Name
         const anonId = `Anon-${(c.id || '00000').substring(0,5).toUpperCase()}`;
+        
         return `
         <tr>
             <td><input type="checkbox" class="complaint-checkbox" value="${c.id}"></td>
-            <td class="fw-bold text-muted">${anonId}</td>
+            <td>
+                <div class="fw-bold text-dark">${c.userName || 'Guest'}</div>
+                <div class="text-muted" style="font-size: 0.7rem;">ID: ${anonId}</div>
+            </td>
             <td>${c.category}</td>
             <td><span class="status-badge-admin ${getStatusBadgeClass(c.status)}">${c.status}</span></td>
             <td>${c.date}</td>
@@ -144,8 +160,8 @@ function updateRecentComplaints() {
 
 function updateAllComplaintsTable() {
     const tbody = document.getElementById('adminComplaintsTable');
-    if(!tbody) return;
-    
+    if (!tbody) return;
+
     if (currentComplaints.length === 0) {
         // Now accurately matching the 8 headers in the HTML
         tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No complaints found.</td></tr>`;
@@ -153,11 +169,14 @@ function updateAllComplaintsTable() {
     }
 
     tbody.innerHTML = currentComplaints.map(c => {
-        const anonId = `Anon-${(c.id || '00000').substring(0,5).toUpperCase()}`;
+        const anonId = `Anon-${(c.id || '00000').substring(0, 5).toUpperCase()}`;
         // Outputting exactly 8 data columns, perfectly aligned
         return `
         <tr>
-            <td class="fw-bold text-muted">${anonId}</td>
+           <td>
+    <div class="fw-bold text-dark">${c.userName || 'Unknown User'}</div>
+    <div class="small text-muted" style="font-size: 0.75rem;">${c.userId}</div>
+</td>
             <td>${c.category}</td>
             <td>${c.subcategory}</td>
             <td>${c.nature || '-'}</td>
@@ -174,16 +193,16 @@ function updateAllComplaintsTable() {
 
 function updatePendingTable() {
     const tbody = document.getElementById('pendingTable');
-    if(!tbody) return;
+    if (!tbody) return;
     const pending = currentComplaints.filter(c => c.status === 'Not Processed yet' || c.status === 'Not Processed');
-    
+
     if (pending.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Hooray! No pending complaints.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = pending.map(c => {
-        const anonId = `Anon-${(c.id || '00000').substring(0,5).toUpperCase()}`;
+        const anonId = `Anon-${(c.id || '00000').substring(0, 5).toUpperCase()}`;
         return `
         <tr>
             <td class="fw-bold text-muted">${anonId}</td>
@@ -196,8 +215,8 @@ function updatePendingTable() {
 
 function updateUsersTable() {
     const tbody = document.getElementById('usersTable');
-    if(!tbody) return;
-    
+    if (!tbody) return;
+
     if (currentUsers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No registered users found.</td></tr>`;
         return;
@@ -225,7 +244,7 @@ function updateUserStats() {
 // ================= TAB NAVIGATION =================
 function switchSection(sectionId, clickedElement) {
     const allSections = ['overview', 'all-complaints', 'pending', 'users', 'analytics'];
-    
+
     // 1. Hide all sections
     allSections.forEach(id => {
         const sec = document.getElementById(`${id}-section`);
@@ -244,11 +263,11 @@ function switchSection(sectionId, clickedElement) {
 
     // 3. Update active link styling
     document.querySelectorAll('.admin-link').forEach(l => l.classList.remove('active-nav'));
-    if(clickedElement) clickedElement.classList.add('active-nav');
-    
+    if (clickedElement) clickedElement.classList.add('active-nav');
+
     // 4. Load charts if analytics is clicked
-    if(sectionId === 'analytics') {
-        setTimeout(updateCharts, 100); 
+    if (sectionId === 'analytics') {
+        setTimeout(updateCharts, 100);
     }
 
     // 5. MOBILE FIX: Auto-close the sidebar after clicking a link
@@ -258,7 +277,7 @@ function switchSection(sectionId, clickedElement) {
         if (sidebar) {
             sidebar.classList.remove('active');
             // Ensure it slides back out of view
-            sidebar.style.transform = 'translateX(-100%)'; 
+            sidebar.style.transform = 'translateX(-100%)';
         }
         if (mainContent) {
             mainContent.classList.remove('expanded');
@@ -270,14 +289,14 @@ function switchSection(sectionId, clickedElement) {
 window.showSection = switchSection;
 
 // ================= ACTIONS =================
-window.openStatusModal = function(complaintId) {
+window.openStatusModal = function (complaintId) {
     selectedComplaintId = complaintId;
     const complaint = allComplaints.find(c => c.id === complaintId);
-    
-    if(complaint) {
-        const anonId = `Anonymous (ID: ${(complaint.id || '00000').substring(0,5).toUpperCase()})`;
-        
-        document.getElementById('adminModalUser').innerText = anonId; 
+
+    if (complaint) {
+        const anonId = `Anonymous (ID: ${(complaint.id || '00000').substring(0, 5).toUpperCase()})`;
+
+        document.getElementById('adminModalUser').innerText = anonId;
         document.getElementById('adminModalCategory').innerText = `${complaint.category} > ${complaint.subcategory}`;
         document.getElementById('adminModalNature').innerText = complaint.nature || 'Not specified';
         document.getElementById('adminModalDate').innerText = complaint.date || 'Unknown';
@@ -285,24 +304,24 @@ window.openStatusModal = function(complaintId) {
 
         let currentStatus = complaint.status === 'Not Processed' ? 'Not Processed yet' : complaint.status;
         document.getElementById('newStatus').value = currentStatus;
-        document.getElementById('adminNote').value = complaint.adminNote || ''; 
+        document.getElementById('adminNote').value = complaint.adminNote || '';
 
         new bootstrap.Modal(document.getElementById('statusModal')).show();
     }
 }
 
-document.getElementById('updateStatusBtn')?.addEventListener('click', async function() {
+document.getElementById('updateStatusBtn')?.addEventListener('click', async function () {
     if (!selectedComplaintId) return;
     let newStatus = document.getElementById('newStatus').value;
     let adminNote = document.getElementById('adminNote').value;
 
     const cIndex = allComplaints.findIndex(c => c.id === selectedComplaintId);
-    if(cIndex > -1) {
+    if (cIndex > -1) {
         allComplaints[cIndex].status = newStatus;
         allComplaints[cIndex].adminNote = adminNote;
     }
-    
-    filterComplaints(); 
+
+    filterComplaints();
     bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
     showNotification('Status updated!', 'success');
 
@@ -313,10 +332,10 @@ document.getElementById('updateStatusBtn')?.addEventListener('click', async func
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: newStatus, adminNote: adminNote })
         });
-    } catch(e) {}
+    } catch (e) { }
 });
 
-window.deleteComplaint = async function(complaintId) {
+window.deleteComplaint = async function (complaintId) {
     if (confirm('Delete this complaint permanently?')) {
         allComplaints = allComplaints.filter(c => c.id !== complaintId);
         filterComplaints();
@@ -325,18 +344,18 @@ window.deleteComplaint = async function(complaintId) {
         try {
             const token = await auth.currentUser.getIdToken();
             fetch(`${API_BASE_URL}/complaints/${complaintId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-        } catch(e) {}
+        } catch (e) { }
     }
 }
 
-window.toggleUserStatus = async function(userId) {
+window.toggleUserStatus = async function (userId) {
     const userIndex = currentUsers.findIndex(u => u.id === userId);
     if (userIndex === -1) return;
-    
+
     const user = currentUsers[userIndex];
     const isSuspended = user.status === 'Suspended';
 
-    if(confirm(isSuspended ? 'Restore this user?' : 'Suspend this user?')) {
+    if (confirm(isSuspended ? 'Restore this user?' : 'Suspend this user?')) {
         user.status = isSuspended ? 'Active' : 'Suspended';
         updateUsersTable();
         updateUserStats();
@@ -349,18 +368,18 @@ window.toggleUserStatus = async function(userId) {
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: user.status })
             });
-        } catch(e) {}
+        } catch (e) { }
     }
 }
 
 // ================= EVENT LISTENERS & FILTERS =================
 // --- 1. EVENT LISTENERS SETUP ---
 function setupEventListeners() {
-    
+
     // A. Select All Checkbox
     const selectAllBox = document.getElementById('selectAllRecent');
     if (selectAllBox) {
-        selectAllBox.addEventListener('change', function() {
+        selectAllBox.addEventListener('change', function () {
             // Find all checkboxes in the table and match them to the Select All box
             const checkboxes = document.querySelectorAll('.complaint-checkbox');
             checkboxes.forEach(cb => cb.checked = this.checked);
@@ -371,7 +390,7 @@ function setupEventListeners() {
     document.getElementById('btnBulkClose')?.addEventListener('click', () => {
         handleBulkAction('Closed', 'Bulk closed successfully!', 'success');
     });
-    
+
     document.getElementById('btnAssignTeam')?.addEventListener('click', () => {
         handleBulkAction('In Process', 'Assigned to team!', 'info');
     });
@@ -404,14 +423,14 @@ async function handleBulkAction(newStatus, msg, alertType) {
     if (confirm(`Are you sure you want to change ${selectedIds.length} complaints to "${newStatus}"?`)) {
         try {
             const token = await auth.currentUser.getIdToken();
-            
+
             // 2. Send the update to Render for EVERY selected complaint
             const updatePromises = selectedIds.map(id => {
                 return fetch(`${API_BASE_URL}/complaints/${id}/status`, {
                     method: 'PUT',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`, 
-                        'Content-Type': 'application/json' 
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ status: newStatus, adminNote: '' })
                 });
@@ -426,7 +445,7 @@ async function handleBulkAction(newStatus, msg, alertType) {
 
             // 4. Show success popup and reload the live data!
             showNotification(msg, alertType);
-            await loadAdminData(auth.currentUser); 
+            await loadAdminData(auth.currentUser);
 
         } catch (error) {
             console.error("Bulk action failed:", error);
@@ -454,8 +473,8 @@ function showNotification(message, type = 'success') {
 }
 
 function getStatusBadgeClass(status) {
-    return (status === 'Not Processed yet' || status === 'Not Processed') ? 'status-pending-admin' : 
-           status === 'In Process' ? 'status-process-admin' : 'status-closed-admin';
+    return (status === 'Not Processed yet' || status === 'Not Processed') ? 'status-pending-admin' :
+        status === 'In Process' ? 'status-process-admin' : 'status-closed-admin';
 }
 
 // ================= CHARTS (PREMIUM UPGRADE) =================
@@ -466,10 +485,10 @@ function updateCharts() {
     const statCtx = document.getElementById('statusChart');
     const monthCtx = document.getElementById('monthChart');
     const deptCtx = document.getElementById('departmentChart');
-    
-    if(!catCtx || !statCtx || !monthCtx || !deptCtx) return;
 
-    if(currentComplaints.length === 0) {
+    if (!catCtx || !statCtx || !monthCtx || !deptCtx) return;
+
+    if (currentComplaints.length === 0) {
         const emptyData = { labels: ['No Data'], datasets: [{ data: [1], backgroundColor: ['#f3f4f6'] }] };
         const emptyOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
 
@@ -492,28 +511,28 @@ function updateCharts() {
 
     currentComplaints.forEach(c => {
         categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
-        
+
         let stat = c.status === 'Not Processed' ? 'Not Processed yet' : c.status;
-        if(statusCounts[stat] !== undefined) statusCounts[stat]++;
+        if (statusCounts[stat] !== undefined) statusCounts[stat]++;
 
         // --- BULLETPROOF DATE PARSER ---
-        if(c.date && c.date !== 'N/A') {
+        if (c.date && c.date !== 'N/A') {
             let monthIndex = null;
             let d = new Date(c.date);
-            
+
             if (!isNaN(d)) {
                 monthIndex = d.getMonth();
             } else {
                 // If browser Date parsing fails, extract month manually!
                 if (c.date.includes('/')) {
                     // Usually DD/MM/YYYY
-                    monthIndex = parseInt(c.date.split('/')[1]) - 1; 
+                    monthIndex = parseInt(c.date.split('/')[1]) - 1;
                 } else if (c.date.includes('-')) {
                     // Usually YYYY-MM-DD
                     monthIndex = parseInt(c.date.split('-')[1]) - 1;
                 }
             }
-            
+
             // Only tally if we successfully extracted a valid month (0-11)
             if (monthIndex !== null && !isNaN(monthIndex) && monthIndex >= 0 && monthIndex <= 11) {
                 monthCounts[monthIndex] = (monthCounts[monthIndex] || 0) + 1;
@@ -533,7 +552,7 @@ function updateCharts() {
     const totalCount = currentComplaints.length;
     const closedCount = statusCounts['Closed'];
     const resRate = totalCount > 0 ? Math.round((closedCount / totalCount) * 100) : 0;
-    
+
     let topIssue = "-";
     let maxCount = 0;
     for (const [issue, count] of Object.entries(deptCounts)) {
@@ -543,68 +562,68 @@ function updateCharts() {
     document.getElementById('analytics-res-rate').innerText = `${resRate}%`;
     document.getElementById('analytics-top-dept').innerText = topIssue;
 
-    const pieOpts = { 
+    const pieOpts = {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } },
-        cutout: '70%' 
+        cutout: '70%'
     };
 
     if (categoryChart) categoryChart.destroy();
-    categoryChart = new Chart(catCtx.getContext('2d'), { 
-        type: 'doughnut', 
-        data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B'], borderWidth: 0 }] }, 
-        options: pieOpts 
+    categoryChart = new Chart(catCtx.getContext('2d'), {
+        type: 'doughnut',
+        data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B'], borderWidth: 0 }] },
+        options: pieOpts
     });
 
     if (statusChart) statusChart.destroy();
-    statusChart = new Chart(statCtx.getContext('2d'), { 
-        type: 'doughnut', 
-        data: { labels: ['Pending', 'In Process', 'Closed'], datasets: [{ data: [statusCounts['Not Processed yet'], statusCounts['In Process'], statusCounts['Closed']], backgroundColor: ['#EF4444', '#F59E0B', '#10B981'], borderWidth: 0 }] }, 
-        options: pieOpts 
+    statusChart = new Chart(statCtx.getContext('2d'), {
+        type: 'doughnut',
+        data: { labels: ['Pending', 'In Process', 'Closed'], datasets: [{ data: [statusCounts['Not Processed yet'], statusCounts['In Process'], statusCounts['Closed']], backgroundColor: ['#EF4444', '#F59E0B', '#10B981'], borderWidth: 0 }] },
+        options: pieOpts
     });
 
     // Feed perfectly sorted chronological data into the Line chart!
     if (monthChart) monthChart.destroy();
-    monthChart = new Chart(monthCtx.getContext('2d'), { 
-        type: 'line', 
-        data: { 
-            labels: finalMonthLabels, 
-            datasets: [{ 
-                label: 'Complaints', 
-                data: finalMonthData, 
-                borderColor: '#3B82F6', 
-                backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-                borderWidth: 3, 
-                tension: 0.4, 
+    monthChart = new Chart(monthCtx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: finalMonthLabels,
+            datasets: [{
+                label: 'Complaints',
+                data: finalMonthData,
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
                 fill: true,
                 pointBackgroundColor: '#ffffff',
                 pointBorderColor: '#3B82F6',
                 pointBorderWidth: 2,
                 pointRadius: 4
-            }] 
-        }, 
-        options: { 
+            }]
+        },
+        options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } }
-        } 
+        }
     });
 
-    const sortedIssues = Object.entries(deptCounts).sort((a,b) => b[1] - a[1]).slice(0,5);
-    
+    const sortedIssues = Object.entries(deptCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
     if (departmentChart) departmentChart.destroy();
-    departmentChart = new Chart(deptCtx.getContext('2d'), { 
-        type: 'bar', 
-        data: { 
-            labels: sortedIssues.map(i => i[0].length > 15 ? i[0].substring(0,15)+'...' : i[0]), 
-            datasets: [{ label: 'Cases', data: sortedIssues.map(i => i[1]), backgroundColor: '#8B5CF6', borderRadius: 4 }] 
-        }, 
-        options: { 
-            indexAxis: 'y', 
+    departmentChart = new Chart(deptCtx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: sortedIssues.map(i => i[0].length > 15 ? i[0].substring(0, 15) + '...' : i[0]),
+            datasets: [{ label: 'Cases', data: sortedIssues.map(i => i[1]), backgroundColor: '#8B5CF6', borderRadius: 4 }]
+        },
+        options: {
+            indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: { x: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } }, y: { grid: { display: false } } }
-        } 
+        }
     });
 }
 
@@ -625,9 +644,9 @@ document.addEventListener('click', (e) => {
 
 // --- GLOBAL UI FUNCTIONS ---
 // This must be outside of everything else so the HTML can "see" it!
-window.showSection = function(sectionId, clickedElement) {
+window.showSection = function (sectionId, clickedElement) {
     const allSections = ['overview', 'all-complaints', 'pending', 'users', 'analytics'];
-    
+
     // Hide all
     allSections.forEach(id => {
         const sec = document.getElementById(`${id}-section`);
@@ -646,17 +665,17 @@ window.showSection = function(sectionId, clickedElement) {
 
     // Update active state
     document.querySelectorAll('.admin-link').forEach(l => l.classList.remove('active-nav'));
-    if(clickedElement) clickedElement.classList.add('active-nav');
-    
+    if (clickedElement) clickedElement.classList.add('active-nav');
+
     // Auto-close mobile sidebar
     if (window.innerWidth <= 992) {
         const sidebar = document.getElementById('sidebar');
-        if (sidebar) sidebar.style.transform = 'translateX(-100%)'; 
+        if (sidebar) sidebar.style.transform = 'translateX(-100%)';
     }
 };
 
 // --- MOBILE SIDEBAR TOGGLE (The 3 Lines) ---
-document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+document.getElementById('sidebarToggle')?.addEventListener('click', function () {
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
         // Toggle the slide effect manually
